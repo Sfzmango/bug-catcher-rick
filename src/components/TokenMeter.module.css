@@ -1,0 +1,83 @@
+.wrap {
+  display: grid;
+  gap: var(--space-1);
+  padding-right: 48px;
+}
+
+.track {
+  position: relative;
+  display: flex;
+  height: 16px;
+  border: 2px solid var(--gb-0);
+  border-radius: 3px;
+  overflow: visible;
+  background: var(--gb-3);
+}
+
+.segment {
+  height: 100%;
+  background: var(--gb-1);
+}
+
+.warn {
+  background: var(--amber);
+}
+
+.stop {
+  background: var(--red);
+}
+
+.tick {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--gb-0);
+  transform: translateX(-1px);
+}
+
+.labels {
+  position: relative;
+  height: 36px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.labels .cap {
+  left: auto;
+  right: -48px;
+  top: -28px;
+  transform: none;
+}
+
+@media (max-width: 600px) {
+  .wrap {
+    padding-right: 0;
+  }
+
+  .labels {
+    height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .labels span {
+    position: static;
+    transform: none;
+    text-align: left;
+  }
+
+  .labels .cap {
+    margin-left: auto;
+  }
+}

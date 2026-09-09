@@ -1,0 +1,33 @@
+.scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 420px;
+  font-size: 13px;
+}
+
+.caption {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  text-align: left;
+  padding-bottom: var(--space-2);
+}
+
+.table th,
+.table td {
+  border: 2px solid var(--ink);
+  padding: var(--space-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  background: var(--ink);
+  color: var(--cream);
+}

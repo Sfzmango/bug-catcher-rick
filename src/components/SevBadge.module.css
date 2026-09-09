@@ -1,0 +1,11 @@
+.badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.caption {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+}

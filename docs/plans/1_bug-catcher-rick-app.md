@@ -4,7 +4,7 @@
 
 ## Goal
 
-Ship a public, Pokédex-styled single-page web app that is the "Dex entry" for **Bug Catcher Rick**, the read-only bug-diagnosis agent from Maung's Agentic Toolbelt. The app has three views — the **Dex entry** (trainer card, tool grants, auto-detect steps, the 10-field dossier "moveset", cardinal rules, circuit-breaker table, token-budget meter), a **Battle** simulator that steps through a scripted Rick-vs-adversary debate with HP bars and a verdict, and a **Dossier** viewer that parses a pasted plain-text dossier and renders it as a Pokédex card with a SEV gym badge and the forced fix route. It exists so developers evaluating or using the toolbelt can grasp, in under a minute, what Rick does, what he refuses to do, and how a diagnosis flows into `/orchestrator` or `/chore`. Client-only, deployed to GitHub Pages from GitHub Actions.
+Ship a public, Pokédex-styled single-page web app that is the "Dex entry" for **Bug Catcher Rick**, the read-only bug-diagnosis agent from Maung's Agentic Toolbelt. The app has two views — the **Dex entry** (trainer card, tool grants, auto-detect steps, the 10-field dossier "moveset", cardinal rules, circuit-breaker table, token-budget meter) and a **Dossier** viewer that parses a pasted plain-text dossier and renders it as a Pokédex card with a SEV gym badge and the forced fix route. It exists so developers evaluating or using the toolbelt can grasp, in under a minute, what Rick does, what he refuses to do, and how a diagnosis flows into `/orchestrator` or `/chore`. *(A third view, a scripted Rick-vs-adversary Battle simulator, was built and then cut at the owner's request during implementation — see "Decisions locked in this plan".)* Client-only, deployed to GitHub Pages from GitHub Actions.
 
 ## Foundation
 
@@ -13,7 +13,7 @@ Discovery was answered by the developer before planning; every catalog line is r
 - **Product framing**
   - Target user — developers evaluating or using Maung's Agentic Toolbelt (public showcase).
   - Core job — be the canonical, memorable "Dex entry" for Bug Catcher Rick: what he does, what he never does, and how a dossier routes to a fix.
-  - v1 success — the three views render on GitHub Pages; a real dossier pasted from an `@bug-catcher-rick` run renders as a card with the correct SEV badge and route; the Battle can be played end-to-end with keyboard only.
+  - v1 success — both views render on GitHub Pages; a real dossier pasted from an `@bug-catcher-rick` run renders as a card with the correct SEV badge and route.
 - **Technical foundation**
   - Stack — Vite + React 18 + TypeScript, client-only static SPA. React Router (`HashRouter`, GitHub-Pages-safe). Vitest + `@testing-library/react` for unit/component tests. Playwright available for local live verification.
   - Data — none. All copy lives in a typed content module transcribed at build time from the two toolbelt markdown files; nothing is fetched at runtime.
@@ -23,9 +23,9 @@ Discovery was answered by the developer before planning; every catalog line is r
   - Scale & NFRs — static single-user page; responsive down to ~400px; visible focus states; `prefers-reduced-motion` respected; no backend, so availability is Pages' availability.
   - Compliance — n/a — no user data, no PII, no payments.
 - **Constraints & scaffolding**
-  - Constraints — npm, Node 20. MIT license. No copyrighted Pokémon sprites and no Pokémon names in the UI; the only franchise framing is the "Bug Catcher" trainer-class idea plus an original 24x24 pixel-art Rick.
+  - Constraints — npm, Node 20. MIT license. No Pokémon names in the UI. *(As-built, owner-requested: the plan originally required an original 24x24 pixel-art Rick and no franchise sprites; the owner instead asked for the real Gen 1 Bug Catcher trainer sprite, which is vendored under `public/sprites/` with a credits notice in README — see "Decisions locked in this plan".)*
   - Repo bootstrap — git already initialised (`be13359 chore: seed repository`); single package; scaffold via `npm create vite@latest` (react-ts template), then hand-trim.
-  - v1 defer list — backend, auth, analytics, dark theme, any agent other than Rick (the adversary appears only as the Battle opponent).
+  - v1 defer list — backend, auth, analytics, dark theme, any agent other than Rick.
 - **Minimal CLAUDE.md seed**
 
   ```markdown
@@ -45,7 +45,8 @@ Discovery was answered by the developer before planning; every catalog line is r
   - All Rick copy lives in `src/content/*.ts`, transcribed from the toolbelt's
     `agents/bug-catcher-rick.md` + `skills/bug-catcher/SKILL.md`. Never fetch at runtime.
   - `src/lib/*` is pure and framework-free; every exported function has a test.
-  - No Pokémon sprites or Pokémon names in the UI. The sprite in `src/content/sprite.ts` is original.
+  - The vendored Gen 1 Bug Catcher trainer sprite in `public/sprites/` (credited in README) is the
+    only franchise asset; add no other Pokémon sprites, names, or assets.
   - No AI-assistant attribution in commits, PRs, or files.
   ```
 
@@ -61,13 +62,12 @@ Discovery was answered by the developer before planning; every catalog line is r
 
 ## Architecture
 
-The app is a static SPA with three routes behind a `HashRouter` (`#/`, `#/battle`, `#/dossier`), wrapped in a single `PokedexShell` layout that draws the red shell, the top LED cluster, the tab navigation, and a green "screen" region into which the active view renders. All prose — trainer card, tool grants, auto-detect steps, the 10 dossier fields, cardinal rules, circuit breakers, token budget, the example dossier, and the Battle scripts — is data in `src/content/*.ts`, typed so a missing or misspelled field is a compile error. Components are presentational: they take content objects and render; they hold no domain logic.
+The app is a static SPA with two routes behind a `HashRouter` (`#/`, `#/dossier`), wrapped in a single `PokedexShell` layout that draws the red shell, the top LED cluster, the tab navigation, and a green "screen" region into which the active view renders. All prose — trainer card, tool grants, auto-detect steps, the 10 dossier fields, cardinal rules, circuit breakers, token budget, and the example dossier — is data in `src/content/*.ts`, typed so a missing or misspelled field is a compile error. Components are presentational: they take content objects and render; they hold no domain logic.
 
 Domain logic lives in two pure, framework-free modules with unit tests. `src/lib/dossier.ts` parses the agent's plain-text dossier format (a known label, then ` — ` or `:`, then a value that may run onto following lines) into a typed `ParsedDossier`, and extracts the SEV, the CONFIDENT/HYPOTHESIS tag, and a `live` flag from the PROD MITIGATION field. `src/lib/severity.ts` turns a SEV plus two SEV3-only qualifiers (one file? no migration/security surface?) into a `RouteDecision` that encodes the skill's rubric exactly: SEV1/SEV2 → `/orchestrator` (never `/chore`; SEV1 live → mitigation first), SEV3 → `/orchestrator` unless both qualifiers hold, SEV4 → `/chore`. The Dossier view is a thin composition: textarea → `parseDossier` → `routeFor` → `DossierCard`.
 
-The Battle view is a `useReducer` state machine driven by a scripted scenario. Each scenario is a list of up to three rounds; each round has a Rick turn (a dossier claim) and an adversary turn (a refutation or confirmation), each dealing HP damage to the opponent. Advancing (click, Enter, or Space on the focused stage) reveals the next turn; after the final scripted turn the verdict banner shows and the only remaining action is reset. Four scenarios ship, one per verdict: CONFIRMED, DISPUTED, WRONG-ROOT-CAUSE, INCONCLUSIVE — so every branch of the skill's debate loop is demonstrated, including the "3 rounds without convergence → escalate to the developer" exit.
 
-The Rick sprite is an original 24x24 pixel map (an array of 24 strings, one character per palette index) rendered onto a `<canvas>` with image smoothing off and scaled by an integer factor. Styling is plain CSS with custom properties for the palette and CSS modules per component; no CSS framework. Fonts load from Google Fonts via `<link>` tags in `index.html`.
+The Rick sprite is the vendored 56x56 Gen 1 Bug Catcher trainer PNG (`public/sprites/bug-catcher-rg.png`) rendered by an `<img>` with `image-rendering: pixelated`, sized to the box each placement needs. Styling is plain CSS with custom properties for the palette and CSS modules per component; no CSS framework. Fonts load from Google Fonts via `<link>` tags in `index.html`.
 
 ### Application structure
 
@@ -76,53 +76,13 @@ flowchart TD
     A[index.html + main.tsx] --> B[HashRouter]
     B --> C[PokedexShell: red shell, LED, tabs, green screen]
     C -->|"#/"| D[DexEntry view]
-    C -->|"#/battle"| E[Battle view]
     C -->|"#/dossier"| F[Dossier view]
     D --> G[(content/rick.ts)]
-    E --> H[(content/scenarios.ts)]
-    E --> I[lib/battle.ts reducer]
     F --> J[lib/dossier.ts parseDossier]
     J --> K[lib/severity.ts routeFor]
     K --> L[DossierCard + SevBadge + RouteCallout]
-    D & E & F --> M[RickSprite canvas from content/sprite.ts]
+    D & F --> M[RickSprite img from public/sprites/bug-catcher-rg.png]
 ```
-
-### Battle state machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> Picker
-    Picker --> RickTurn : select scenario (round = 1)
-    RickTurn --> AdversaryTurn : advance (click / Enter / Space)\napply damage to adversary
-    AdversaryTurn --> RickTurn : advance, more rounds scripted\nround += 1, apply damage to Rick
-    AdversaryTurn --> Verdict : advance, no rounds left\n(verdict = scenario.verdict)
-    Verdict --> Picker : reset
-    RickTurn --> Picker : reset
-    AdversaryTurn --> Picker : reset
-    note right of Verdict
-        CONFIRMED → "Proceed to Phase 3: plan + route"
-        DISPUTED / WRONG-ROOT-CAUSE / INCONCLUSIVE
-        after round 3 → "Escalate to developer with both positions"
-    end note
-```
-
-Reducer shape (`src/lib/battle.ts`):
-
-```ts
-type Phase = 'picker' | 'rick' | 'adversary' | 'verdict';
-interface BattleState {
-  phase: Phase;
-  scenarioId: string | null;
-  round: number;            // 1..3
-  rickHp: number;           // 0..100
-  adversaryHp: number;      // 0..100
-  log: BattleLine[];        // revealed turns, oldest first
-}
-type BattleAction = { type: 'select'; scenarioId: string } | { type: 'advance' } | { type: 'reset' };
-export function battleReducer(state: BattleState, action: BattleAction, scenarios: Scenario[]): BattleState;
-```
-
-`advance` is a no-op in `picker` and `verdict`, so a stray Enter cannot skip past the verdict.
 
 ### Dossier parse → route flow
 
@@ -157,7 +117,7 @@ export type Confidence = 'CONFIDENT' | 'HYPOTHESIS';
 export interface ParsedDossier {
   fields: Partial<Record<DossierField, string>>;
   missing: DossierField[];
-  sev: Sev | null;               // from PROPOSED SEV: /SEV\s*-?\s*([1-4])/i, highest wins if several
+  sev: Sev | null;               // from PROPOSED SEV: SEV tokens (highest wins), else a bare level digit, else Critical/High/Moderate/Low
   confidence: Confidence | null; // from ROOT CAUSE
   live: boolean;                 // PROD MITIGATION present and not "none" / "n/a" / "not live"
 }
@@ -172,7 +132,9 @@ Routing contract (`src/lib/severity.ts`):
 export type Sev = 1 | 2 | 3 | 4;
 export interface RouteInput { sev: Sev; live?: boolean; oneFile?: boolean; noMigrationOrSecurity?: boolean }
 export interface RouteDecision {
+  sev: Sev;                   // echoed so the UI branches on the level, not on the reason prose
   route: '/orchestrator' | '/chore';
+  label: '/orchestrator' | '/chore' | '/chore permitted';  // display label (review follow-up)
   choreAllowed: boolean;      // false for SEV1/SEV2 always
   mitigationFirst: boolean;   // true only for SEV1 && live
   reason: string;             // one sentence quoting the rubric
@@ -183,12 +145,14 @@ export function sevMeta(sev: Sev): { name: 'Critical' | 'High' | 'Moderate' | 'L
 
 ### Decisions locked in this plan
 
-- **Router** — `HashRouter`. Avoids a `404.html` rewrite hack on GitHub Pages; URLs are `/bug-catcher-rick/#/battle`.
+- **Router** — `HashRouter`. Avoids a `404.html` rewrite hack on GitHub Pages; URLs are `/bug-catcher-rick/#/dossier`. A `*` catch-all redirects unknown hashes (including the removed `#/battle`) to `#/`.
 - **SEV3 qualifiers are user-supplied, not inferred.** Guessing "one file" from BLAST RADIUS prose would be a fabricated certainty — exactly what Rick forbids. The Dossier view shows two checkboxes (unchecked by default → `/orchestrator`) only when SEV3 is parsed.
-- **Battle state in `useReducer` with a pure reducer in `src/lib/battle.ts`** so the debate mechanics are unit-testable without React.
 - **Styling = CSS custom properties + CSS modules.** No Tailwind or component library; the visual identity is bespoke enough that a framework would fight it.
 - **Playwright is local-only.** One smoke spec ships under `e2e/` with `npm run e2e`; CI runs `npm test` and `npm run build` only, to keep the PR gate fast and browser-free.
-- **Four scenarios (one per verdict)** rather than the minimum three, so the Battle demonstrates every exit of the debate loop.
+- **Real Bug Catcher sprite instead of an original one (owner-requested change, as-built).** The plan specified an original 24x24 canvas-drawn sprite and no franchise sprites. During implementation the owner asked to "use the actual bug catcher Rick sprite"; the Gen 1 Red/Green Bug Catcher trainer sprite is vendored under `public/sprites/` — never hotlinked — rendered by an `<img>` with `image-rendering: pixelated`, credited in README (© Nintendo / Game Freak / Creatures, non-commercial fan use, sourced from the Bulbapedia archives), and explicitly excluded from the MIT grant in `LICENSE` (review follow-up). An unused Yellow variant was vendored briefly and then dropped in review. `src/content/sprite.ts` and the canvas renderer were removed.
+- **Type sizes, as-built (review follow-up).** Press Start 2P is 14px for the H1, 12px for H2 and the route label, 11px for the shell title, and 10px for every meaning-bearing label (tabs, dossier field labels, chips, the CONFIDENT | HYPOTHESIS tag, table headers, meter marks, buttons, badge captions); only aria-hidden decorative eyebrows (move index, PP pips, `[x]` marks) are 9px. The first build used 7–9px for several of these; raised in review.
+- **Parser tolerance, as-built (review follow-up).** Labels may be wrapped in Markdown bold or preceded by a `-`/`*` bullet (`**SYMPTOM** — x`, `**SYMPTOM:** x`, `- SYMPTOM — x`), a label with an empty value counts as missing, a code fence is stripped even when a preamble line precedes it, the bare-digit SEV shape is read from the first line only, a bulleted PROD MITIGATION list is live (only none / n/a / not-live phrases or a dash-only value are not), and the empty state shows a one-line shape hint when text is present but nothing parsed. SEV badge colourways are `--sev-1..4` (+`-deep`) tokens in `tokens.css`, referenced through `sevMeta().cssVar`.
+- **Battle view removed (owner-requested scope cut, as-built).** The plan originally included a `#/battle` scripted Rick-vs-adversary debate simulator (a `useReducer` state machine with four scenarios, one per adversary verdict). It was implemented, verified, and then cut at the repo owner's explicit request ("remove battle") before the implementation commit landed. The app ships exactly two views; the adversary is mentioned only in the transcribed prose. Nothing Battle-specific remains in the tree.
 
 ## Files to edit
 
@@ -205,39 +169,36 @@ Tooling and config:
 - `index.html` — root element, Google Fonts `<link>`s (Press Start 2P, IBM Plex Sans, IBM Plex Mono), meta viewport, theme-color `#c8102e`.
 - `vite.config.ts` — `base: '/bug-catcher-rick/'`, `@vitejs/plugin-react`, Vitest `test` block (`environment: 'jsdom'`, `setupFiles: ['src/test/setup.ts']`, `include: ['src/**/*.test.{ts,tsx}']`).
 - `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` — strict TS, `noUncheckedIndexedAccess`.
-- `playwright.config.ts` — `webServer: npm run preview`, `baseURL: http://localhost:4173/bug-catcher-rick/`.
+- `playwright.config.ts` — `webServer: npm run preview`, `baseURL: http://localhost:4173/bug-catcher-rick/`. The `e2e` script is `npm run build && playwright test` so the smoke always runs against the current tree (`vite preview` serves `dist/` as-is).
 - `.github/workflows/ci.yml` — PR gate (see "CI workflow outline").
 - `.github/workflows/deploy.yml` — build + Pages deploy on push to `main`.
-- `public/favicon.svg` — a 16x16 flat icon derived from the sprite palette (original).
+- `public/favicon.svg` — a 16x16 flat icon in the Game Boy palette (original).
+- `public/sprites/bug-catcher-rg.png` — vendored Gen 1 Bug Catcher trainer sprite (Red/Green monochrome). Sourced from the Bulbapedia archives; credited in README and carved out of the MIT grant in `LICENSE`.
 
 Entry and shell:
 
 - `src/main.tsx` — mounts `<App />` in `StrictMode`.
 - `src/App.tsx` — `HashRouter` + `Routes`; `PokedexShell` as the layout route.
 - `src/components/PokedexShell.tsx` + `.module.css` — red shell frame, LED cluster, tab nav (`NavLink`s with `aria-current`), green screen slot, footer link to the toolbelt repo.
-- `src/styles/tokens.css` — palette custom properties (`--shell #c8102e`, `--shell-deep #8f0a20`, `--gb-0 #0f380f`, `--gb-1 #306230`, `--gb-2 #8bac0f`, `--gb-3 #9bbc0f`, `--cream #f6f1df`, `--ink #1f1a14`), font stacks, spacing scale, focus ring.
+- `src/styles/tokens.css` — palette custom properties (`--shell #c8102e`, `--shell-deep #8f0a20`, `--gb-0 #0f380f`, `--gb-1 #306230`, `--gb-2 #8bac0f`, `--gb-3 #9bbc0f`, `--cream #f6f1df`, `--ink #1f1a14`, `--sev-1..4` + `-deep` badge colourways), font stacks, spacing scale, focus ring.
 - `src/styles/global.css` — reset, body fonts, focus-visible outline, `@media (prefers-reduced-motion: reduce)` kill-switch for all animation.
 
 Content (transcribed at build time from `agents/bug-catcher-rick.md` and `skills/bug-catcher/SKILL.md`; never fetched):
 
-- `src/content/types.ts` — `TrainerCard`, `ToolGrant`, `AutoDetectStep`, `Move` (dossier field), `CardinalRule`, `CircuitBreaker`, `TokenBudget`, `Scenario`, `Turn`, `Verdict`.
+- `src/content/types.ts` — `TrainerCard`, `ToolGrant`, `AutoDetectStep`, `Move` (dossier field), `CardinalRule`, `CircuitBreaker`, `TokenBudget`, `SevRubricRow`.
 - `src/content/rick.ts` — trainer card (name, class "Bug Catcher", role, one-paragraph description, "read-only" badge); `toolGrants` (Read, Bash, Grep, WebFetch, `mcp__github__issue_read`, `mcp__github__pull_request_read` granted; Edit, Write, `git push` denied); `autoDetectSteps` (3); `moves` (the 10 dossier fields with one-line descriptions, ROOT CAUSE carrying the CONFIDENT/HYPOTHESIS tag); `cardinalRules` (6, from the agent file); `circuitBreakers` (7 rows); `tokenBudget` `{ cap: 100_000, checkpoint: 0.6, halt: 0.8 }`; `sevRubric` (4 rows from the skill).
 - `src/content/exampleDossier.ts` — one realistic plain-text dossier (SEV1, CONFIDENT, live) used by the "Load example" button and by tests.
-- `src/content/scenarios.ts` — four scripted scenarios: `prod-lockout` (ends CONFIRMED in round 2), `flaky-rate-limit` (ends DISPUTED after round 3), `double-escape` (ends WRONG-ROOT-CAUSE after round 3), `ghost-500` (ends INCONCLUSIVE after round 3).
-- `src/content/sprite.ts` — `RICK_SPRITE: readonly string[]` (24 rows x 24 chars) + `SPRITE_PALETTE` (char → colour, using the Game Boy greens plus the cream/ink for outline and cap).
 
 Pure logic:
 
 - `src/lib/dossier.ts` — `parseDossier`, `DOSSIER_FIELDS`, `ParsedDossier`.
 - `src/lib/severity.ts` — `routeFor`, `sevMeta`, `Sev`.
-- `src/lib/battle.ts` — `battleReducer`, `initialBattleState`, `BattleState`, `BattleAction`.
 
 Components (presentational):
 
-- `src/components/RickSprite.tsx` — canvas renderer; props `scale` (default 4), `label` (aria-label); draws once via `useEffect`; idle bob via CSS class unless reduced motion.
-- `src/components/Screen.tsx` + `.module.css` — green screen panel with scanline overlay and inner bezel.
-- `src/components/DialogueBox.tsx` + `.module.css` — cream box with ink text and the blinking "▼" continue arrow (static under reduced motion).
-- `src/components/HpBar.tsx` + `.module.css` — labelled bar, `role="meter"`, `aria-valuenow`, colour shifts green → amber → red under 50% / 20%.
+- `src/components/RickSprite.tsx` + `.module.css` — `<img>` of the vendored sprite; props `size` (box px, default 96), `label` (alt text), `idle`; `image-rendering: pixelated`; idle bob via CSS class unless reduced motion.
+- `src/components/Screen.tsx` + `.module.css` — green screen panel with scanline overlay and inner bezel (props: `children`, `className`).
+- `src/components/DialogueBox.tsx` + `.module.css` — cream box with ink text (an optional blinking "▼" continue arrow is supported; static under reduced motion).
 - `src/components/TokenMeter.tsx` + `.module.css` — 100k budget bar with tick marks at 60% ("checkpoint") and 80% ("halt"); `role="meter"`.
 - `src/components/ToolGrants.tsx` — two-column list; denied items rendered with `<s>` plus visually-hidden "denied" text so the strike-through is not colour-only.
 - `src/components/MoveList.tsx` — the 10 dossier fields as a numbered moveset with PP-style pips purely decorative.
@@ -245,24 +206,20 @@ Components (presentational):
 - `src/components/SevBadge.tsx` + `.module.css` — gym-badge SVG with SEV number; four colourways.
 - `src/components/RouteCallout.tsx` — renders a `RouteDecision` (route, mitigation-first warning, reason).
 - `src/components/DossierCard.tsx` + `.module.css` — the Pokédex card: sprite, symptom headline, badge, confidence chip, live chip, the 10 fields in order with missing ones shown as "— not provided —".
-- `src/components/ScenarioPicker.tsx` — radio-group of the four scenarios with a one-line symptom each.
-- `src/components/BattleStage.tsx` + `.module.css` — sprites facing off, two `HpBar`s, `DialogueBox` for the current turn, round counter, Next / Reset buttons; the stage `<section>` is `tabIndex={0}` and handles Enter/Space.
 
 Views:
 
 - `src/views/DexEntry.tsx` + `.module.css`
-- `src/views/Battle.tsx` + `.module.css`
 - `src/views/Dossier.tsx` + `.module.css`
 
 Tests:
 
-- `src/test/setup.ts` — `@testing-library/jest-dom/vitest`; canvas `getContext` stub for jsdom.
+- `src/test/setup.ts` — `@testing-library/jest-dom/vitest` + Testing Library cleanup.
 - `src/lib/dossier.test.ts`
 - `src/lib/severity.test.ts`
-- `src/lib/battle.test.ts`
-- `src/views/Battle.test.tsx`
+- `src/views/DexEntry.test.tsx` — pins acceptance criterion 3's counts (added in review).
 - `src/views/Dossier.test.tsx`
-- `e2e/smoke.spec.ts` — loads each route, asserts the heading and that the sprite canvas is present (local only).
+- `e2e/smoke.spec.ts` — loads each route, asserts the heading, and asserts the sprite `<img>` where it appears (local only).
 
 ### npm scripts
 
@@ -274,7 +231,7 @@ Tests:
   "typecheck": "tsc -b --noEmit",
   "test": "vitest run",
   "test:watch": "vitest",
-  "e2e": "playwright test"
+  "e2e": "npm run build && playwright test"
 }
 ```
 
@@ -282,7 +239,7 @@ Tests:
 
 ### CI workflow outline
 
-`.github/workflows/ci.yml` — trigger `pull_request` (all branches) and `push` to branches other than `main`:
+`.github/workflows/ci.yml` — trigger `pull_request` only, so each PR commit is verified exactly once (as-built: the plan also listed `push` to non-`main` branches, which double-ran the gate; dropped in review); workflow-level `permissions: { contents: read }` for parity with `deploy.yml` (added in review round 5):
 
 1. `actions/checkout@v4`
 2. `actions/setup-node@v4` with `node-version-file: .nvmrc`, `cache: npm`
@@ -291,7 +248,7 @@ Tests:
 5. `npm test`
 6. `npm run build`
 
-`.github/workflows/deploy.yml` — trigger `push` to `main` and `workflow_dispatch`; `permissions: { contents: read, pages: write, id-token: write }`; `concurrency: { group: pages, cancel-in-progress: true }`:
+`.github/workflows/deploy.yml` — trigger `push` to `main` and `workflow_dispatch`; workflow-level `permissions: { contents: read }`; the `build` job re-declares `permissions: { contents: read, pages: read }` (`actions/configure-pages` reads the Pages config and 403s without `pages: read`; it runs `npm ci` on third-party code and never needs the OIDC token) and `pages: write` + `id-token: write` are granted on the `deploy` job only; `concurrency: { group: pages, cancel-in-progress: false }` so an in-flight production deploy is never aborted (queued runs still coalesce). *(as-built: the plan first had `cancel-in-progress: true` and workflow-level write permissions; tightened in review, then `pages: read` restored on `build` in review round 4.)*
 
 - job `build`: checkout → setup-node (same as above) → `npm ci` → `npm test` → `npm run build` → `actions/configure-pages@v5` → `actions/upload-pages-artifact@v3` with `path: dist`.
 - job `deploy`: `needs: build`, `environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }`, `actions/deploy-pages@v4` (`id: deployment`).
@@ -300,25 +257,14 @@ Pages must be set to "Source: GitHub Actions" in repo settings once (see "Follow
 
 ## UI/UX
 
-Single theme, Gen-1 Pokédex. The whole app lives inside a red shell (`#c8102e`, bevel `#8f0a20`) with a top-left LED cluster (one large blue-ish lens, three small LEDs) and a green screen (`#9bbc0f` background, `#0f380f` ink) as the main content surface. Cream (`#f6f1df`) dialogue boxes with `#1f1a14` text carry prose. Press Start 2P is used only for headings, tab labels, badges, and HP labels at 10–14px; IBM Plex Sans is body; IBM Plex Mono is used for the dossier text and code-like values. All interactive elements have a 3px `#0f380f` `focus-visible` outline offset 2px on light surfaces and a `#f6f1df` outline on the red shell. Every animation (sprite bob, HP drain, blinking continue arrow, scanline drift) is disabled under `prefers-reduced-motion: reduce`.
+Single theme, Gen-1 Pokédex. The whole app lives inside a red shell (`#c8102e`, bevel `#8f0a20`) with a top-left LED cluster (one large blue-ish lens, three small LEDs) and a green screen (`#9bbc0f` background, `#0f380f` ink) as the main content surface. Cream (`#f6f1df`) dialogue boxes with `#1f1a14` text carry prose. Press Start 2P is used only for headings, tab labels, badges, field labels, and chips at 10–14px (decorative eyebrows such as the move index, PP pips, and the `[x]` grant marks may sit at 9px); IBM Plex Sans is body; IBM Plex Mono is used for the dossier text and code-like values. All interactive elements have a 3px `#0f380f` `focus-visible` outline offset 2px on light and green surfaces and a `#f6f1df` outline on the red chrome only (header, tab nav, footer — the `on-shell` hook lives on those three elements, never on the app root). Every animation (sprite bob, scanline drift) is disabled under `prefers-reduced-motion: reduce`.
 
 ### Screen flow
 
 ```mermaid
 flowchart TD
-    DEX["#/ Dex entry"] -->|tab: Battle| BAT["#/battle"]
-    DEX -->|tab: Dossier| DOS["#/dossier"]
-    BAT -->|tab: Dex| DEX
-    BAT -->|tab: Dossier| DOS
+    DEX["#/ Dex entry"] -->|tab: Dossier| DOS["#/dossier"]
     DOS -->|tab: Dex| DEX
-    DOS -->|tab: Battle| BAT
-    BAT --> P[Scenario picker]
-    P -->|choose scenario| S[Stage: Rick turn]
-    S -->|Next / Enter / Space| T[Stage: adversary turn]
-    T -->|Next, rounds remain| S
-    T -->|Next, last round| V[Verdict banner]
-    V -->|Reset| P
-    S & T -->|Reset| P
     DOS --> E[Empty state]
     E -->|Load example / paste| C[Card + badge + route]
     C -->|clear textarea| E
@@ -329,7 +275,7 @@ flowchart TD
 ```text
 +------------------------------------------------------------------+
 | (o) . . .                       BUG CATCHER RICK        No. 001  |  <- red shell header
-|  [ DEX ]  [ BATTLE ]  [ DOSSIER ]                                 |  <- tabs (NavLink)
+|  [ DEX ]  [ DOSSIER ]                                             |  <- tabs (NavLink)
 +------------------------------------------------------------------+
 | +--------------------------------------------------------------+ |
 | |  +--------+  BUG CATCHER RICK          class: Bug Catcher     | |  <- green screen
@@ -362,39 +308,11 @@ flowchart TD
 
 At ~400px the two-column blocks (tool grants / auto-detect, moveset grid) collapse to one column; the circuit-breaker table scrolls horizontally inside its box.
 
-### Battle (`#/battle`) — wireframe
-
-```text
-+------------------------------------------------------------------+
-|  [ DEX ]  [ BATTLE ]  [ DOSSIER ]                                 |
-+------------------------------------------------------------------+
-| +--------------------------------------------------------------+ |
-| |  ADVERSARY                    HP [==========------]  62/100   | |
-| |                                          +--------+           | |
-| |                                          | sprite |  (flipped)| |
-| |                                          +--------+           | |
-| |  +--------+                                                   | |
-| |  | Rick   |                                                   | |
-| |  +--------+                                                   | |
-| |  RICK                         HP [===============-]  90/100   | |
-| |                                            ROUND 2 / 3        | |
-| +--------------------------------------------------------------+ |
-| +-- cream dialogue box -----------------------------------------+ |
-| |  RICK used ROOT CAUSE!                                         | |
-| |  "Permissions table unseeded in prod — release phase never     | |
-| |   runs db:seed. CONFIDENT."                              ▼     | |
-| +--------------------------------------------------------------+ |
-|  [ NEXT ▶ ]   [ RESET ]         Enter / Space also advance        |
-+------------------------------------------------------------------+
-```
-
-Picker state replaces the stage with a radio group of the four scenarios (title + one-line symptom) and a "Start battle" button. Verdict state replaces the dialogue box text with a banner: verdict name, a one-line consequence ("Proceed to Phase 3: plan + route" or "Round 3 without convergence — escalate to the developer with both positions"), and only Reset remains enabled. The stage `<section>` receives focus automatically when a scenario starts so Enter/Space work immediately; a visually-hidden live region (`aria-live="polite"`) announces each new turn.
-
 ### Dossier (`#/dossier`) — wireframe
 
 ```text
 +------------------------------------------------------------------+
-|  [ DEX ]  [ BATTLE ]  [ DOSSIER ]                                 |
+|  [ DEX ]  [ DOSSIER ]                                             |
 +------------------------------------------------------------------+
 | +-- cream ------------------------------------------------------+ |
 | |  Paste a dossier (LABEL — value or LABEL: value per field)     | |
@@ -438,7 +356,7 @@ Dev:
 
 - `vite` (latest stable at scaffold time), `@vitejs/plugin-react`
 - `typescript` ~5.x
-- `vitest` ^3, `jsdom` ^26
+- `vitest` ^4, `jsdom` ^26 — *(as-built: the plan said `^3`; vitest 3 pulled a moderate `@vitest/mocker` advisory, so the implementation pinned `^4`, which is clean under `npm audit` and works with Vite 6 unchanged.)*
 - `@testing-library/react` ^16, `@testing-library/jest-dom` ^6, `@testing-library/user-event` ^14
 - `@playwright/test` (local only)
 
@@ -451,11 +369,13 @@ Exact versions are pinned by `package-lock.json` at scaffold time; the majors ab
 - Happy path: the example dossier parses all 10 fields, `missing` is empty, `sev === 1`, `confidence === 'CONFIDENT'`, `live === true`.
 - Both separators: `SYMPTOM — x` and `SYMPTOM: x` produce identical output; `REGRESSION TEST—x` (no spaces) also parses.
 - Multi-line values: an EVIDENCE CHAIN spanning three lines joins with `\n` and stops at the next label.
-- Missing fields: a dossier with only SYMPTOM and ROOT CAUSE lists the other eight in `missing`, in canonical order.
+- Missing fields: a dossier with only SYMPTOM and ROOT CAUSE lists the other eight in `missing`, in canonical order; a label with an empty value (`SYMPTOM —`) is missing, not provided.
+- Paste shapes: `**SYMPTOM** — x`, `**SYMPTOM:** x`, and `- SYMPTOM — x` all parse; bulleted lines inside a value stay continuation lines.
 - No labels at all → all 10 missing, `sev === null`.
-- SEV extraction: `SEV2`, `SEV 2`, `SEV-2`, lowercase `sev2`; "SEV2, arguably SEV1" → 1 (higher wins).
+- SEV extraction: `SEV2`, `SEV 2`, `SEV-2`, lowercase `sev2`; "SEV2, arguably SEV1" → 1 (higher wins — deliberate: under-triage is the costlier error, so "SEV3 (not SEV2)" is knowingly read as SEV2). Hand-written shapes: a bare `1`–`4`, and the rubric names Critical / High / Moderate / Low (names are consulted only when no token or digit is present, so "high-visibility" in prose cannot promote a tagged SEV3).
+- A PROPOSED SEV that is present but unreadable ("unclear, needs triage") yields `sev: null`; the route callout then says the value could not be read and shows it, rather than claiming the line is missing.
 - Confidence: HYPOTHESIS detected; neither present → `null`.
-- Live flag: PROD MITIGATION "none" / "n/a" / "not a live bug" → `false`; a real mitigation sentence → `true`.
+- Live flag: PROD MITIGATION "none" / "n/a" / "not a live bug" → `false` (also with trailing prose: "None; not a live bug."); a real mitigation sentence → `true`, including ones that start with "No workaround; …" or "Nothing yet; …" — a bare "No" is deliberately not a negation because the flag only ever adds a warning.
 - Fenced input: a dossier wrapped in triple backticks parses the same as unwrapped.
 - Case-insensitive labels: `Symptom —` works.
 
@@ -469,30 +389,16 @@ Exact versions are pinned by `package-lock.json` at scaffold time; the majors ab
 - SEV4 → `/chore`.
 - `sevMeta` returns the four names and distinct badge strings.
 
-`src/lib/battle.test.ts`
-
-- `select` moves picker → rick with round 1 and full HP.
-- `advance` from rick reveals the adversary turn and reduces adversary HP by the scripted damage; from adversary with rounds remaining increments the round.
-- After the last scripted turn, `advance` yields `verdict` equal to the scenario's verdict; further `advance` is a no-op.
-- `advance` in picker is a no-op; `reset` from any phase returns to the initial state.
-- Each of the four shipped scenarios reaches its declared verdict and has ≤ 3 rounds (data-integrity guard).
-
-`src/views/Battle.test.tsx`
-
-- Renders the picker; choosing "prod-lockout" and pressing Start shows Rick's first turn.
-- Clicking Next advances to the adversary turn (dialogue text changes, adversary HP meter `aria-valuenow` drops).
-- Pressing Enter on the focused stage advances; pressing Space advances.
-- Stepping to the end shows the CONFIRMED banner; Next is disabled; Reset returns to the picker.
-
 `src/views/Dossier.test.tsx`
 
 - Empty textarea shows the empty-state prompt and no card.
 - "Load example" fills the textarea and renders a card with the SEV1 badge and the "mitigation FIRST" callout.
-- Pasting a SEV3 dossier shows the two qualifier checkboxes; checking both switches the callout to "/chore permitted".
+- Pasting a SEV3 dossier shows the two qualifier checkboxes; checking both switches the callout to "/chore permitted"; the callout is an `aria-live="polite"` region.
+- Text with no recognisable label shows the empty state plus a one-line `LABEL — value` hint.
 
-`e2e/smoke.spec.ts` (local only): each route loads, the `<h1>` matches, and a `<canvas>` sprite is present.
+`e2e/smoke.spec.ts` (local only): each route loads and the `<h1>` matches; no horizontal page scroll at 400px and 375px on both routes (AC 9); an unknown hash such as `#/battle` redirects to `#/`; under emulated `prefers-reduced-motion: reduce` no element on either route has a running animation or transition, while the sprite does animate without the preference (AC 12); the Dossier textarea, both buttons, and the SEV3 checkboxes show the 3px ink focus ring while a tab shows the cream one (AC 10); the sprite `<img>` is asserted on `#/` only, because the empty Dossier state has no sprite by design — the Dossier example flow in the same spec asserts it there. *(as-built deviation from "a `<canvas>` sprite is present" on every route.)*
 
-Live verification (not available to the architect): after implementation, run `npm run e2e` and manually check the 400px layout and keyboard-only Battle in a browser; escalate findings to the developer.
+Live verification (not available to the architect): after implementation, run `npm run e2e` and manually check the 400px layout in a browser; escalate findings to the developer.
 
 ## Blast radius
 
@@ -502,29 +408,27 @@ Greenfield: no existing users or data. Sensitive surfaces: none — no auth, no 
 
 - Any backend, API, auth, analytics, or persistence.
 - Dark theme or theme switching.
-- Other toolbelt agents or skills (the adversary is a scripted opponent only; no adversary Dex entry).
+- Other toolbelt agents or skills (no adversary Dex entry).
 - Fetching the toolbelt's markdown at runtime, or any sync mechanism for content.
-- Free-form / user-authored Battle scenarios.
+- Any Battle / debate simulator (cut by the owner during implementation).
 - Running Playwright in CI.
-- Pokémon sprites, names, cries, or any franchise asset beyond the trainer-class framing.
+- Pokémon names, cries, or any franchise asset beyond the vendored Bug Catcher trainer sprite.
 
 ## Acceptance criteria
 
 Ships when:
 
 1. `npm ci && npm run typecheck && npm test && npm run build` exit 0 on Node 20, and the same steps pass in the PR CI workflow.
-2. Pushing to `main` builds and deploys to `https://sfzmango.github.io/bug-catcher-rick/`, and all three hash routes load there with assets resolved under the `/bug-catcher-rick/` base.
+2. Pushing to `main` builds and deploys to `https://sfzmango.github.io/bug-catcher-rick/`, and both hash routes load there with assets resolved under the `/bug-catcher-rick/` base.
 3. The Dex entry shows the trainer card, six granted tools and three struck-through denied tools (with non-colour-only denial cues), the three auto-detect steps, the ten dossier fields in the agent's order with ROOT CAUSE carrying the CONFIDENT/HYPOTHESIS tag, six cardinal rules, the seven-row circuit-breaker table, and a 100k token meter with 60% checkpoint and 80% halt marks.
-4. The Battle offers four scenarios whose verdicts are CONFIRMED, DISPUTED, WRONG-ROOT-CAUSE, and INCONCLUSIVE; each plays through at most three rounds; HP bars update per turn; the verdict banner states the consequence; Reset returns to the picker.
-5. The Battle is fully operable by keyboard: tab to the picker, choose, start, then Enter or Space advances and Reset is reachable; screen readers get each turn via a live region.
-6. The Dossier view parses both `LABEL — value` and `LABEL: value`, multi-line values, case-insensitive labels, and fenced input; missing fields are listed rather than crashing.
-7. The SEV badge and route callout match the rubric exactly: SEV1/SEV2 never show `/chore`; SEV1 live shows "mitigation first"; SEV3 shows `/chore permitted` only when both qualifiers are checked; SEV4 shows `/chore`.
-8. "Load example" renders a complete SEV1 live card with zero missing fields.
-9. All copy in the UI is traceable to `src/content/*.ts`, and every content string is present in one of the two toolbelt source files (paraphrase permitted for length, meaning preserved).
-10. The sprite is an original 24x24 pixel map drawn to canvas; no Pokémon names or assets appear anywhere in the repo.
-11. Layout holds at 400px wide with no horizontal page scroll (the circuit-breaker table scrolls within its own box).
-12. Every interactive element has a visible `focus-visible` state, and all animation is disabled under `prefers-reduced-motion: reduce`.
-13. No AI-assistant attribution appears in any commit, PR body, or file.
+4. The Dossier view parses both `LABEL — value` and `LABEL: value`, multi-line values, case-insensitive labels, and fenced input; missing fields are listed rather than crashing.
+5. The SEV badge and route callout match the rubric exactly: SEV1/SEV2 never show `/chore`; SEV1 live shows "mitigation first"; SEV3 shows `/chore permitted` only when both qualifiers are checked; SEV4 shows `/chore`.
+6. "Load example" renders a complete SEV1 live card with zero missing fields.
+7. All copy in the UI is traceable to `src/content/*.ts`, and every content string is present in one of the two toolbelt source files (paraphrase permitted for length, meaning preserved).
+8. The sprite is the vendored Gen 1 Bug Catcher trainer PNG rendered pixelated, credited in README; no other Pokémon names or assets appear anywhere in the repo.
+9. Layout holds at 400px wide with no horizontal page scroll (the circuit-breaker table scrolls within its own box).
+10. Every interactive element has a visible `focus-visible` state, and all animation is disabled under `prefers-reduced-motion: reduce`.
+11. No AI-assistant attribution appears in any commit, PR body, or file.
 
 ## Follow-up at merge time
 

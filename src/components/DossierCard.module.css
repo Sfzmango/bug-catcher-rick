@@ -1,0 +1,90 @@
+.card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.headText {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.headline {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.chip {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  border: 2px solid var(--gb-0);
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+
+.live {
+  background: var(--red);
+  color: var(--cream);
+  border-color: var(--red);
+}
+
+.fields {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+  border-top: 2px solid var(--gb-0);
+  padding-top: var(--space-3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.dt {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.missing {
+  color: var(--gb-0);
+  font-style: italic;
+}
+
+.missingList {
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}

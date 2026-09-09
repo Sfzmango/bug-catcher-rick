@@ -1,0 +1,41 @@
+:root {
+  --shell: #c8102e;
+  --shell-deep: #8f0a20;
+  --gb-0: #0f380f;
+  --gb-1: #306230;
+  --gb-2: #8bac0f;
+  --gb-3: #9bbc0f;
+  --cream: #f6f1df;
+  --ink: #1f1a14;
+  --amber: #d99a1e;
+  --red: #b3261e;
+  --lens: #4aa3df;
+  --lens-deep: #1c4f7a;
+
+  /* SEV gym-badge colourways (referenced by sevMeta().cssVar) */
+  --sev-1: #b3261e;
+  --sev-1-deep: #5a0f0a;
+  --sev-2: #d99a1e;
+  --sev-2-deep: #6b4a08;
+  --sev-3: #4aa3df;
+  --sev-3-deep: #1c4f7a;
+  --sev-4: #8bac0f;
+  --sev-4-deep: #306230;
+  --sev-unknown: #9a9a9a;
+  --sev-unknown-deep: #4a4a4a;
+
+  --font-pixel: 'Press Start 2P', 'Courier New', monospace;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius: 6px;
+  --focus-light: 3px solid var(--gb-0);
+  --focus-dark: 3px solid var(--cream);
+}
