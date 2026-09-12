@@ -1,0 +1,41 @@
+.callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  border: 2px dashed var(--gb-0);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.label,
+.route,
+.never {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+}
+
+.route {
+  font-size: 12px;
+}
+
+.never {
+  color: var(--red);
+  font-size: 10px;
+}
+
+.warn {
+  flex-basis: 100%;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.reason {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+
+.raw {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

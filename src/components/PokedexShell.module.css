@@ -1,0 +1,135 @@
+.shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) var(--space-5);
+  background: var(--shell);
+  border: 4px solid var(--shell-deep);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.12),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+  min-height: 100vh;
+  color: var(--cream);
+}
+
+@media (min-width: 920px) {
+  .shell {
+    margin: var(--space-5) auto;
+    min-height: auto;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.leds {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.lens {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #bfe6ff 0, var(--lens) 35%, var(--lens-deep) 100%);
+  border: 4px solid var(--cream);
+  box-shadow: 0 0 0 2px var(--shell-deep);
+}
+
+.led {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--shell-deep);
+}
+
+.ledRed {
+  background: #ff5a5a;
+}
+
+.ledYellow {
+  background: #ffd23f;
+}
+
+.ledGreen {
+  background: #5ce65c;
+}
+
+.title {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.number {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.tab {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  text-decoration: none;
+  color: var(--cream);
+  background: var(--shell-deep);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius) var(--radius) 0 0;
+  border: 2px solid var(--shell-deep);
+  border-bottom: none;
+  text-transform: uppercase;
+}
+
+.tabActive {
+  background: var(--gb-3);
+  color: var(--gb-0);
+  border-color: var(--gb-0);
+}
+
+.screenSlot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--ink);
+}
+
+.footer {
+  margin-top: var(--space-4);
+  font-size: 12px;
+  text-align: center;
+}
+
+.footer a {
+  color: var(--cream);
+}
+
+@media (max-width: 480px) {
+  .shell {
+    padding: var(--space-3) var(--space-2) var(--space-4);
+    border-radius: 0;
+    border-width: 0;
+  }
+
+  .title {
+    font-size: 10px;
+  }
+
+  .tab {
+    font-size: 10px;
+    padding: var(--space-2);
+  }
+}

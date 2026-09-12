@@ -19,3 +19,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-party assets excluded from the above grant
+
+The files under public/sprites/ (the Bug Catcher trainer sprite) are
+© Nintendo / Game Freak / Creatures Inc. They are included for non-commercial
+fan purposes only, are NOT licensed under the MIT License above, and may not be
+redistributed under its terms. See the Credits section of README.md.
